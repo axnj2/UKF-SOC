@@ -3,7 +3,7 @@ classdef BatteryModel < handle
         ocv_coefficients
         sampling_period
         measurementNoise
-        processNoise
+        time_const_fraction
         Q
         OneC
         eta
@@ -15,11 +15,11 @@ classdef BatteryModel < handle
     end
 
     methods
-        function obj = BatteryModel(fraction_of_total_capacity, measurementNoise, processNoise, initial_state, sampling_period)
+        function obj = BatteryModel(fraction_of_total_capacity, measurementNoise, time_const_fraction, initial_state, sampling_period)
             arguments (Input)
                 fraction_of_total_capacity (1,1) double = 1
                 measurementNoise (1,1) double = 0
-                processNoise (1,1) double = 0
+                time_const_fraction (1,1) double = 0
                 initial_state (2,1) double = [0; 1]
                 sampling_period (1,1) double = 1
             end
@@ -30,8 +30,8 @@ classdef BatteryModel < handle
             load("coeffs.mat", "coeffs")
             obj.sampling_period = sampling_period;
             obj.measurementNoise = measurementNoise;
-            obj.processNoise = processNoise;
             obj.ocv_coefficients = coeffs; % store coefficients for OCV calculation
+            obj.time_const_fraction = time_const_fraction;
 
             RO_vec=xx_final_cycles(:,1);
             RD_vec=xx_final_cycles(:,2);
@@ -47,7 +47,7 @@ classdef BatteryModel < handle
 
             obj.Q = obj.Q * fraction_of_total_capacity;
 
-            tawd = RD * CD;
+            tawd = RD * CD * time_const_fraction;
 
             A=[-1/tawd,0;
             0,0];
@@ -67,32 +67,15 @@ classdef BatteryModel < handle
         end
 
         function [output_voltage, SOC] = step(obj, input_current)
-            output_voltage = measurement(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients) + obj.measurementNoise * randn();
-            obj.x = state_transition(obj.x, input_current, obj.A_d, obj.B_d) + obj.processNoise * randn(size(obj.x));
-            obj.x(2) = clip(obj.x(2), 0, 1);
-            SOC = obj.x(2);
-        end
-
-        function output_voltage = open_circuit_voltage(obj, SOC)
-            % this is a function for finding the OCV at any SOC using legandre
-            % Degree of polynomial
-            n = length(obj.ocv_coefficients)-1;
-
-            % Normalize SOC to [-1,1]
-            SOC_prime = 2 * (SOC - 0) / (1 - 0) - 1; % SOC_prime = 2 * (SOC - min(SOC)) / (max(SOC) - min(SOC)) - 1 in which min(SOC)=0 and max(SOC)=1
-
-            
-            % Compute Legendre polynomials
-            A = zeros(length(SOC_prime), n+1);
-            A(:, 1) = ones(length(SOC_prime), 1);        % P_0(x) = 1
-            A(:, 2) = SOC_prime .* ones(length(SOC_prime), 1); % P_1(x) = x
-            
-            for k = 2:n
-                A(:, k+1) = ((2*k - 1) .* SOC_prime .* A(:, k) - (k-1) .* A(:, k-1)) / k;
+            arguments
+                obj BatteryModel
+                input_current (1,1) double % in milliAmperes
             end
 
-            % Compute OCV
-            output_voltage = A * obj.ocv_coefficients;
+            output_voltage = measurement(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients) + obj.measurementNoise * randn();
+            obj.x = state_transition(obj.x, input_current, obj.A_d, obj.B_d);
+            obj.x(2) = clip(obj.x(2), 0, 1);
+            SOC = obj.x(2);
         end
     end
 end

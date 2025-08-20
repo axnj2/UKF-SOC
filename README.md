@@ -13,3 +13,7 @@ Sans correction (modèle interne batterie de capacité 1) et batterie avec capac
 ![](image.png)
 Avec correction toute les secondes 
 ![](image-1.png)
+
+## next step
+Comment traiter le bruit sur le courant
+un bruit de +- 30 mA est raisonnable pour un BMS
