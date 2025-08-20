@@ -19,7 +19,7 @@ classdef BatteryModel < handle
             arguments (Input)
                 fraction_of_total_capacity (1,1) double = 1
                 measurementNoise (1,1) double = 0
-                time_const_fraction (1,1) double = 0
+                time_const_fraction (1,1) double = 1.0
                 initial_state (2,1) double = [0; 1]
                 sampling_period (1,1) double = 1
             end
