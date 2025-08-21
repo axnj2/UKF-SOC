@@ -15,10 +15,9 @@ classdef BatteryModel < handle
     end
 
     methods
-        function obj = BatteryModel(fraction_of_total_capacity, measurementNoise, time_const_fraction, initial_state, sampling_period)
+        function obj = BatteryModel(fraction_of_total_capacity, time_const_fraction, initial_state, sampling_period)
             arguments (Input)
                 fraction_of_total_capacity (1,1) double = 1
-                measurementNoise (1,1) double = 0
                 time_const_fraction (1,1) double = 1.0
                 initial_state (2,1) double = [0; 1]
                 sampling_period (1,1) double = 1
@@ -29,7 +28,6 @@ classdef BatteryModel < handle
             load("xx_final_cycles.mat", "xx_final_cycles")
             load("coeffs.mat", "coeffs")
             obj.sampling_period = sampling_period;
-            obj.measurementNoise = measurementNoise;
             obj.ocv_coefficients = coeffs; % store coefficients for OCV calculation
             obj.time_const_fraction = time_const_fraction;
 
@@ -72,7 +70,7 @@ classdef BatteryModel < handle
                 input_current (1,1) double % in milliAmperes
             end
 
-            output_voltage = measurement(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients) + obj.measurementNoise * randn();
+            output_voltage = measurement(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients);
             obj.x = state_transition(obj.x, input_current, obj.A_d, obj.B_d);
             obj.x(2) = clip(obj.x(2), 0, 1);
             SOC = obj.x(2);
