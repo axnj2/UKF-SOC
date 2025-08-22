@@ -6,36 +6,27 @@ Check out `src/test_state_estimation_with_ukf.m` for an explanation on how to us
 
 
 ## results
-Sans correction (modèle interne batterie de capacité 1) et batterie avec capacité de 0.3 la capacité initiale.
+Kalman filter (internal battery model with capacity 1) without correction (no voltage reading) SOC estimation of a battery with capacity at 0.3 of the initial value.
 
 ![](image.png)
 
-Avec correction toute les secondes 
+Now with a correction (voltage reading) every second.
 
 ![](image-1.png)
 
-Avec un modèle du premier order pour l'UKF sur des donnés de SPMe avec une batterie veillie de capacitée réduite de moitié et une constante de temps doublée (utilise un drive cycle ) sans bruit ajouté : 
+With a first-order model for the UKF on SPMe data with an aged battery (capacity reduced by half and time constant doubled, using a drive cycle) without added noise:
 
 ![](image-3.png)
 
-Le courant d'entrée : 
-
+The input current for the previous plot : 
 ![](image-4.png)
 
-With experimental data it also works well : (SOC from 90 to 80)
-
-![](image-2.png)
+With experimental data it also works well see `src/test_state_estimation_with_ukf.m`.
 
 
-Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé.
+## Conclusion
 
-As long as the ocv does not change, the Kalman filter will still work. I tested variations of the capacity and time constant only. I works even without supplying the input current (setting it to either 0 or only noise). When the voltage noise increases, the accuracy decreases more or less proportionally.
-
-## next step
-Comment traiter le bruit sur le courant
-un bruit de +- 30 mA est raisonnable pour un BMS
-
-Traiter des erreur d'offset sur le courant
+As long as the UKF parameters are properly tuned (process noise, measurement noise, and initial state variance), the battery SOC is accurately estimated (typical error magnitude: around 3% with noise), even if the battery has aged and its capacity and dynamics differ from the model used.
 
 ## References
 
