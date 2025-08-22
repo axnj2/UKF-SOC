@@ -18,6 +18,9 @@ un bruit de +- 30 mA est raisonnable pour un BMS
 De plus lors du veillissement, l'inverse de la constante de temps diminue de +- 30% sur 4000 cycles (Couto et al. 2025).
 $\frac{1}{\tau'} = (1-x) \frac{1}{\tau}$ donc $\tau' =\frac{1}{1-x} \tau$
 
+Traiter des erreur d'offset sur le courant
+
+Traiter des données expérimentales
 
 ## References
 
