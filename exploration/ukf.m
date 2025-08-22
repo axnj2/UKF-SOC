@@ -4,11 +4,11 @@ close all;
 addpath("../battery-model")
 % https://nl.mathworks.com/help/control/ref/unscentedkalmanfilter.html
 
-simulated_battery_model = BatteryModel(1 );
+simulated_battery_model = FirstOrderBatteryModel(1 );
 
 
-transition_fcn = @(x,u) state_transition(x, u, simulated_battery_model.A_d, simulated_battery_model.B_d);
-measurement_fcn = @(x,u) measurement(x, u, simulated_battery_model.C_d, simulated_battery_model.D_d, simulated_battery_model.ocv_coefficients);
+transition_fcn = @(x,u) state_transition_first_order_battery_model(x, u, simulated_battery_model.A_d, simulated_battery_model.B_d);
+measurement_fcn = @(x,u) measurement_first_order_battery_model(x, u, simulated_battery_model.C_d, simulated_battery_model.D_d, simulated_battery_model.ocv_coefficients);
 
 
 observator = unscentedKalmanFilter(transition_fcn, measurement_fcn, simulated_battery_model.x);
@@ -21,7 +21,7 @@ tt = 0:simulated_battery_model.sampling_period:3600; %s
 current_amplitude = 1/4 * simulated_battery_model.OneC;
 input_current = [current_amplitude * ones(1, round(size(tt, 2)*3/4)), -current_amplitude * ones(1, floor(size(tt, 2)/4))];
 size(input_current)
-real_battery_model = BatteryModel(0.3, 1);
+real_battery_model = FirstOrderBatteryModel(0.3, 1);
 
 y_hist = zeros(size(tt));
 y_noised_hist = zeros(size(tt));

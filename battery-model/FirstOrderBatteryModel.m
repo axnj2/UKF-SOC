@@ -1,4 +1,4 @@
-classdef BatteryModel < handle
+classdef FirstOrderBatteryModel < handle
     properties
         ocv_coefficients
         sampling_period
@@ -15,7 +15,7 @@ classdef BatteryModel < handle
     end
 
     methods
-        function obj = BatteryModel(fraction_of_total_capacity, time_const_fraction, initial_state, sampling_period)
+        function obj = FirstOrderBatteryModel(fraction_of_total_capacity, time_const_fraction, initial_state, sampling_period)
             arguments (Input)
                 fraction_of_total_capacity (1,1) double = 1
                 time_const_fraction (1,1) double = 1.0
@@ -23,7 +23,7 @@ classdef BatteryModel < handle
                 sampling_period (1,1) double = 1
             end
             arguments (Output)
-                obj BatteryModel
+                obj FirstOrderBatteryModel
             end
             load("xx_final_cycles.mat", "xx_final_cycles")
             load("coeffs.mat", "coeffs")
@@ -66,12 +66,12 @@ classdef BatteryModel < handle
 
         function [output_voltage, SOC] = step(obj, input_current)
             arguments
-                obj BatteryModel
+                obj FirstOrderBatteryModel
                 input_current (1,1) double % in milliAmperes
             end
 
-            output_voltage = measurement(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients);
-            obj.x = state_transition(obj.x, input_current, obj.A_d, obj.B_d);
+            output_voltage = measurement_first_order_battery_model(obj.x, input_current, obj.C_d, obj.D_d, obj.ocv_coefficients);
+            obj.x = state_transition_first_order_battery_model(obj.x, input_current, obj.A_d, obj.B_d);
             obj.x(2) = clip(obj.x(2), 0, 1);
             SOC = obj.x(2);
         end

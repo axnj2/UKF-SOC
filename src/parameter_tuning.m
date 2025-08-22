@@ -5,6 +5,8 @@ close all;
 addpath("../battery-model")
 
 %--------------model parameters--------------
+% define here ranges of parameters to test and update the loops at the end of the code to loop over them
+% tip : I advice you to add a "s" to the end of the name variables variables that are defined as ranges
 model_battery_capacity_fraction = 1;
 model_time_const_fraction = 1;
 model_initial_state = [0; 1];
@@ -29,7 +31,7 @@ current_noise_std_dev = 20;
 % --------------------------------------------
 
 % generate ground truth data
-ground_truth_battery_model = BatteryModel(ground_truth_battery_capacity, ground_truth_time_constant);
+ground_truth_battery_model = FirstOrderBatteryModel(ground_truth_battery_capacity, ground_truth_time_constant);
 ground_truth_voltages = NaN(size(time));
 ground_truth_SOCs = NaN(size(time));
 input_current = input_current_profile * ground_truth_battery_model.OneC; 
@@ -40,11 +42,21 @@ end
 
 RMS_errors = NaN(length(processNoises), length(StateCovariances));
 
+% Update the variables of the loops here
 for processNoise = processNoises
-    tic
     for StateCovariance = StateCovariances
+        ukf_battery_model = FirstOrderBatteryModel(model_battery_capacity_fraction, model_time_const_fraction, model_initial_state, sampling_period);
+        ukf_state_transition_fct = @(x, u) state_transition_first_order_battery_model(x,...
+                                                                              u,...
+                                                                              ukf_battery_model.A_d,...
+                                                                              ukf_battery_model.B_d);
+        ukf_measurement_fct = @(x, u) measurement_first_order_battery_model(x,...
+                                                                            u,... 
+                                                                            ukf_battery_model.C_d,... 
+                                                                            ukf_battery_model.D_d,...
+                                                                            ukf_battery_model.ocv_coefficients);
         % Initialize the UKF observator
-        ukf_observator = initialize_ukf(model_battery_capacity_fraction, model_time_const_fraction, model_initial_state, sampling_period, processNoise, measurementNoise, StateCovariance);
+        ukf_observator = initialize_ukf(ukf_state_transition_fct, ukf_measurement_fct, model_initial_state, processNoise, measurementNoise, StateCovariance);
         % add noise
         noisy_truth_voltages = ground_truth_voltages + voltage_noise_std_dev * randn(size(ground_truth_voltages));
         noisy_input_current = input_current + current_noise_std_dev * randn(size(input_current));
@@ -57,9 +69,10 @@ for processNoise = processNoises
             RMS_errors(find(processNoises == processNoise), find(StateCovariances == StateCovariance)) = NaN;
         end
     end
-    toc
 end
 
+
+% also update the variables in the legend of the plot
 RMS_errors
 % plot the result as a color image using the colormap abyss and the NaN as white
 figure;
@@ -70,3 +83,13 @@ xlabel('State Covariances');
 ylabel('Process Noises');
 title('RMS Errors');
 set(gca, 'Color', 'w'); % Set axes background to white for NaN
+
+% Add tick labels for process noise and state covariance values
+xticks(1:length(StateCovariances));
+xticklabels(string(StateCovariances));
+yticks(1:length(processNoises));
+yticklabels(string(processNoises));
+
+% Add legend for axes
+xlabel('State Covariances (logspace)');
+ylabel('Process Noises (logspace)');

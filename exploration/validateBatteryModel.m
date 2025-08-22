@@ -4,7 +4,7 @@ close all;
 
 addpath("../battery-model")
 
-bat_test = BatteryModel(1);
+bat_test = FirstOrderBatteryModel(1);
 tt = 0:1:3600*0.3; % s
 y = zeros(1, length(tt)); % output voltage over time
 socs = zeros(1, length(tt)); % state of charge over time
