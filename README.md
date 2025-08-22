@@ -17,7 +17,7 @@ Avec un modèle du premier order pour l'UKF sur des donnés de SPMe avec une bat
 Le courant d'entrée : 
 ![alt text](image-4.png)
 
-Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé
+Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé.
 
 ## next step
 Comment traiter le bruit sur le courant

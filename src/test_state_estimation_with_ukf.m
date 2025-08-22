@@ -34,7 +34,7 @@ ukf_measurement_fct = @(x, u) measurement_first_order_battery_model(x,...
 % create the kalman filter
 ukf_initial_state = [0;1];
 ukf_state_variance = 1e-5; 
-ukf_measurement_noise = 0.01; % should be close to the real measurement_noise
+ukf_measurement_noise = 0; % should be close to the real measurement_noise
 % the ukf_process_noise should be really small (not 0) (the bigger it the the more accurate the filter but if it is too big the filter diverges (1e-4 is already often too big))
 % it is important to adjust it.
 ukf_process_noise = 1e-6; 
@@ -67,9 +67,7 @@ if use_first_order_model_data
         [voltage_data(k), ground_truth_SOC(k)] = data_synthetisation_model.step(current_data(k));
     end
 
-    % adding noise : 
-    voltage_data = voltage_data + 0.01 * randn(size(voltage_data));
-    current_data = current_data + 1 * randn(size(current_data));
+    
 else
     data_capacity_relative = 1;
     data_time_constant_relative = 1;
@@ -95,6 +93,12 @@ else
     ylabel('Current')
 end
 
+% adding noise : 
+voltage_data = voltage_data + 0.0 * randn(size(voltage_data));
+systematic_current_error = 0;
+std_dev_current_noise = 0;
+current_data = systematic_current_error + 1 * current_data + std_dev_current_noise * randn(size(current_data));
+
 %% Run estimation
 % see run_state_estimation.m in this folder for the details
 estimated_SOC = run_state_estimation(observator, current_data, voltage_data, 1);
@@ -112,3 +116,5 @@ ylabel('State of Charge (SOC)');
 title(sprintf('State of Charge Estimation using UKF\n on a battery of relative capacity %.2f, relative time constant %.2f ', data_capacity_relative/ukf_relative_battery_capacity, data_time_constant_relative/ukf_relative_time_constant));
 legend show;
 grid on;
+
+RMS_error = sqrt(mean((ground_truth_SOC - estimated_SOC).^2))

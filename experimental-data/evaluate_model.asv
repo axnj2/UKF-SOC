@@ -1,0 +1,161 @@
+% this code is for evaluating the performance of the ECM with the
+% parameters found from automated optimization (which are interpolated after that)
+clc
+clear all
+close all
+run("run_fit.m")
+close all
+clc
+load("t.mat")
+load("I.mat")
+load("V.mat")
+load("coeffs.mat")
+
+V=V';
+
+
+Q=53.286372757985420*3600; %capacity in A.s
+p.OneC=Q/3600; % value of 1C
+eta=1; %coulombic efficiency
+
+% validation profile with C/4
+T=0.1; %sampling time
+
+
+
+% initialization
+x=zeros(2,length(t)); %states over time 
+y=zeros(1,length(t)); %voltages over time
+OCV_ECM=zeros(1,length(t)); %ocv over time
+initialsoc=1;
+x(:,1)=[0;initialsoc];
+SOC=zeros(1,length(t));
+
+
+% Simulation loop
+for k = 1:length(t) - 1
+    SOC(k) = x(2, k);  % Extract SOC
+
+    % Update parameters using the fit objects
+    RO = feval(fitresult_1, SOC);
+    RD = feval(fitresult_2, SOC);
+    CD = feval(fitresult_3, SOC);
+    
+    ROO(k)=RO;
+    RDD(k)=RD;
+    CDD(k)=CD;
+
+    % Recompute time constants
+    tawd = RD * CD;
+
+    % Update state-space matrices
+    A=[-1/tawd,0;
+    0,0];
+    
+B=-[1/tawd;eta/Q];  
+C=[RD,0];
+D=-(RO);
+
+
+    % Discretize the state-space system
+    sys_cont = ss(A, B, C, D);
+    sys_disc = c2d(sys_cont, T);
+    A_d = sys_disc.A;
+    B_d = sys_disc.B;
+    C_d = sys_disc.C;
+    D_d = sys_disc.D;
+
+    % Update states and outputs
+    x(:, k+1) = A_d * x(:, k) + B_d * I(k);
+    y(k)=ocv(coeffs,x(2,k))+C_d*x(:,k)+D_d*I(k);
+    OCV_ECM(k)=ocv(coeffs,x(2,k)); % store ocv over time samples
+
+end
+% the last output is computed outside of the loop
+
+% computing the parameters at last step for computing the last output:
+
+SOC(k) = x(2, end);  % Extract SOC
+
+    % Update parameters using the fit objects
+    RO = feval(fitresult_1, SOC);
+    RD = feval(fitresult_2, SOC);
+    CD = feval(fitresult_3, SOC);
+
+
+    ROO(end)=RO;
+    RDD(end)=RD;
+    CDD(end)=CD;
+
+
+    % Recompute time constants
+    tawd = RD * CD;
+   
+
+    A=[-1/tawd,0;
+    0,0];
+    
+B=-[1/tawd;eta/Q];  
+C=[RD,0];
+D=-(RO);
+
+
+    % Discretize the state-space system
+    sys_cont = ss(A, B, C, D);
+    sys_disc = c2d(sys_cont, T);
+    A_d = sys_disc.A;
+    B_d = sys_disc.B;
+    C_d = sys_disc.C;
+    D_d = sys_disc.D;
+
+ 
+y(end)=ocv(coeffs,x(2,end))+C_d*x(:,end)+D_d*I(end);
+
+
+
+
+% Initialize variables for SOC points
+soc_points_indices = []; % Indices corresponding to target SOC values
+soc_points_times = [];   % Times corresponding to target SOC values
+soc_points_voltages = []; % Voltages corresponding to target SOC values
+valid_SOC = [];          % Valid SOC values found
+
+
+
+tolerance=10^-4;
+for i = 1:length(SOC_train)
+    idx = find(abs(x(2, :) - SOC_train(i)) < tolerance, 1, 'first'); % Find the closest match
+    if ~isempty(idx) % If a match is found
+        soc_points_indices = [soc_points_indices, idx];
+        soc_points_times = [soc_points_times, t(idx)];
+        soc_points_voltages = [soc_points_voltages, y(idx)];
+        valid_SOC = [valid_SOC, SOC_train(i)]; % Store valid SOC values
+    end
+end
+
+index_rmse=soc_points_indices(2):soc_points_indices(end);
+RMSE=rms(y(index_rmse)-V(index_rmse))
+
+% Plot SOC points on the figure
+figure(1)
+plot(t, y, 'r--',LineWidth=1.5)
+hold on
+plot(t, V,'b',LineWidth=1.5)
+scatter(soc_points_times, soc_points_voltages, 'ko',LineWidth=2) % Highlight points
+xlabel('Time [s]','FontSize',13)
+ylabel('Voltage [V]','FontSize',13)
+legend('Model','Data','SOC points')
+grid on
+box on
+ax=gca;
+ax.FontSize=15;
+
+
+figure(2)
+plot(t, OCV_ECM)
+xlabel('time')
+ylabel('OCV')
+
+figure(3)
+subplot(2,1,1)
+
