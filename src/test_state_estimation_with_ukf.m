@@ -38,6 +38,10 @@ elseif use_experimental_data
     load("experimental-data/coeffs.mat", "coeffs")
     run("run_fit.m")
     Q=53.286372757985420*3600; %capacity in A.s
+    ukf_relative_battery_capacity = 2;
+    ukf_relative_time_constant = 1; % changing this will do nothing
+    Q = Q * ukf_relative_battery_capacity;
+
     eta = 1;
     ukf_time_step = 1; %sampling time
 
