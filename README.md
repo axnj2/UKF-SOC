@@ -11,16 +11,19 @@ Sans correction (modèle interne batterie de capacité 1) et batterie avec capac
 Avec correction toute les secondes 
 ![](image-1.png)
 
+
+Avec un modèle du premier order pour l'UKF sur des donnés de SPMe avec une batterie veillie de capacitée réduite de moitié et une constante de temps doublée (utilise un drive cycle ) sans bruit ajouté :  (`src/test_state_estimation_with_ukf.m`) 
+![alt text](image-3.png)
+Le courant d'entrée : 
+![alt text](image-4.png)
+
+Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé
+
 ## next step
 Comment traiter le bruit sur le courant
 un bruit de +- 30 mA est raisonnable pour un BMS
 
-De plus lors du veillissement, l'inverse de la constante de temps diminue de +- 30% sur 4000 cycles (Couto et al. 2025).
-$\frac{1}{\tau'} = (1-x) \frac{1}{\tau}$ donc $\tau' =\frac{1}{1-x} \tau$
-
 Traiter des erreur d'offset sur le courant
-
-Traiter des données expérimentales
 
 ## References
 
