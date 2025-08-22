@@ -28,6 +28,8 @@ With experimental data it also works well see `src/test_state_estimation_with_uk
 
 As long as the UKF parameters are properly tuned (process noise, measurement noise, and initial state variance), the battery SOC is accurately estimated (typical error magnitude: around 3% with noise), even if the battery has aged and its capacity and dynamics differ from the model used.
 
+As long as the ocv does not change, the Kalman filter will still work. I tested variations of the capacity and time constant only. I works even without supplying the input current (setting it to either 0 or only noise). When the voltage noise increases, the accuracy decreases more or less proportionally.
+
 ## References
 
 Plett, Gregory L. 2011. ‘Recursive Approximate Weighted Total Least Squares Estimation of Battery Cell Total Capacity’. Journal of Power Sources 196 (4): 2319–31. https://doi.org/10.1016/j.jpowsour.2010.09.048.
