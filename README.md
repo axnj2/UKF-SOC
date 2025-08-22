@@ -29,6 +29,8 @@ With experimental data it also works well : (SOC from 90 to 80)
 
 Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé.
 
+As long as the ocv does not change, the Kalman filter will still work. I tested variations of the capacity and time constant only. I works even without supplying the input current (setting it to either 0 or only noise). When the voltage noise increases, the accuracy decreases more or less proportionally.
+
 ## next step
 Comment traiter le bruit sur le courant
 un bruit de +- 30 mA est raisonnable pour un BMS
