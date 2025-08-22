@@ -8,36 +8,67 @@ close all;
 % - measurement(x) (example in battery-model/measurement.m)
 
 % change this with the folder of the model you are using
-addpath("../battery-model");
+use_experimental_data = true;
+use_first_order_model_data = false;
 
-ukf_relative_battery_capacity = 2;
-ukf_relative_time_constant = 0.5;
-ukf_initial_state = [0;1];
-ukf_time_step = 1;
-ukf_battery_model  = FirstOrderBatteryModel(ukf_relative_battery_capacity,...
-                                            ukf_relative_time_constant,...
-                                            ukf_initial_state,...
-                                            ukf_time_step);
+if use_first_order_model_data
+    addpath("../battery-model");
 
-% change these function with the functions of your model
-ukf_state_transition_fct = @(x, u) state_transition_first_order_battery_model(x,...
-                                                                              u,...
-                                                                              ukf_battery_model.A_d,...
-                                                                              ukf_battery_model.B_d);
-ukf_measurement_fct = @(x, u) measurement_first_order_battery_model(x,...
-                                                                    u,... 
-                                                                    ukf_battery_model.C_d,... 
-                                                                    ukf_battery_model.D_d,...
-                                                                    ukf_battery_model.ocv_coefficients);
+    ukf_relative_battery_capacity = 2;
+    ukf_relative_time_constant = 0.5;
+    ukf_initial_state = [0;1];
+    ukf_time_step = 0.1;
+    ukf_battery_model  = FirstOrderBatteryModel(ukf_relative_battery_capacity,...
+                                                ukf_relative_time_constant,...
+                                                ukf_initial_state,...
+                                                ukf_time_step);
 
+    % change these function with the functions of your model
+    ukf_state_transition_fct = @(x, u) state_transition_first_order_battery_model(x,...
+                                                                                u,...
+                                                                                ukf_battery_model.A_d,...
+                                                                                ukf_battery_model.B_d);
+    ukf_measurement_fct = @(x, u) measurement_first_order_battery_model(x,...
+                                                                        u,... 
+                                                                        ukf_battery_model.C_d,... 
+                                                                        ukf_battery_model.D_d,...
+                                                                        ukf_battery_model.ocv_coefficients);
+elseif use_experimental_data
+    addpath("../experimental-data/")
+    load("experimental-data/coeffs.mat", "coeffs")
+    run("run_fit.m")
+    Q=53.286372757985420*3600; %capacity in A.s
+    eta = 1;
+    ukf_time_step = 1; %sampling time
+
+    ukf_state_transition_fct = @(x, u) state_transition_experimental(x,...
+                                                                     u,...
+                                                                     fitresult_1,...
+                                                                     fitresult_2,...
+                                                                     fitresult_3,...
+                                                                     eta,...
+                                                                     Q,...
+                                                                     ukf_time_step);
+
+    ukf_measurement_fct = @(x, u) measurement_experimental(x,...
+                                                             u,...
+                                                             fitresult_1,...
+                                                             fitresult_2,...
+                                                             fitresult_3,...
+                                                             eta,...
+                                                             Q,...
+                                                             ukf_time_step,...
+                                                             coeffs);
+
+end
 
 % create the kalman filter
 ukf_initial_state = [0;1];
-ukf_state_variance = 1e-5; 
-ukf_measurement_noise = 0; % should be close to the real measurement_noise
+ukf_state_variance = 1e-8; 
+ukf_measurement_noise = 0.05; % should be close to the real measurement_noise
 % the ukf_process_noise should be really small (not 0) (the bigger it the the more accurate the filter but if it is too big the filter diverges (1e-4 is already often too big))
 % it is important to adjust it.
-ukf_process_noise = 1e-6; 
+ukf_process_noise = 1e-5; 
 observator = initialize_ukf(ukf_state_transition_fct,...
                      ukf_measurement_fct,...
                      ukf_initial_state,...
@@ -53,7 +84,6 @@ ground_truth_SOC = [];
 data_capacity_relative= 1;
 data_time_constant_relative = 1;
 
-use_first_order_model_data = false;
 if use_first_order_model_data
     data_capacity_relative = 0.5;
     data_time_constant_relative = 1/0.7;
@@ -66,8 +96,31 @@ if use_first_order_model_data
     for k = 1:length(current_data)                                                                                                  
         [voltage_data(k), ground_truth_SOC(k)] = data_synthetisation_model.step(current_data(k));
     end
+elseif use_experimental_data
+    addpath("../experimental-data/")
+    load("I.mat", "I")
+    load("V.mat", "V")
+    voltage_data = V';
+    current_data = I';
 
+    battery_capacity=53.286372757985420*3600; %capacity in A.s
+
+
+    ground_truth_SOC = 1 - cumtrapz(current_data)/(battery_capacity*10);
+    ground_truth_SOC = ground_truth_SOC';
     
+    % trim the data up to max_t
+    max_t = 100000;
+    if max_t < length(voltage_data)
+        voltage_data = voltage_data(1:max_t);
+        current_data = current_data(1:max_t);
+        ground_truth_SOC = ground_truth_SOC(1:max_t);
+    end
+
+    % resample the data to 1 in 10
+    voltage_data = voltage_data(1:10:end);
+    current_data = current_data(1:10:end);
+    ground_truth_SOC = ground_truth_SOC(1:10:end);
 else
     data_capacity_relative = 1;
     data_time_constant_relative = 1;
@@ -101,8 +154,8 @@ current_data = systematic_current_error + 1 * current_data + std_dev_current_noi
 
 %% Run estimation
 % see run_state_estimation.m in this folder for the details
-estimated_SOC = run_state_estimation(observator, current_data, voltage_data, 1);
 
+estimated_SOC = run_state_estimation(observator, current_data, voltage_data, 1);
 
 %% Plot the results
 % you can plot everything you want to see here is a simple example with the SOC only
@@ -117,4 +170,4 @@ title(sprintf('State of Charge Estimation using UKF\n on a battery of relative c
 legend show;
 grid on;
 
-RMS_error = sqrt(mean((ground_truth_SOC - estimated_SOC).^2))
+%RMS_error = sqrt(mean((ground_truth_SOC - estimated_SOC).^2))

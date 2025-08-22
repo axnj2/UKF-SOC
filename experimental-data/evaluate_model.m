@@ -1,11 +1,12 @@
 % this code is for evaluating the performance of the ECM with the
 % parameters found from automated optimization (which are interpolated after that)
-clc
+
 clear all
 close all
+tic
 run("run_fit.m")
-close all
-clc
+toc
+
 load("t.mat")
 load("I.mat")
 load("V.mat")
@@ -13,7 +14,7 @@ load("coeffs.mat")
 
 V=V';
 
-
+size(coeffs)
 Q=53.286372757985420*3600; %capacity in A.s
 p.OneC=Q/3600; % value of 1C
 eta=1; %coulombic efficiency
@@ -30,7 +31,7 @@ OCV_ECM=zeros(1,length(t)); %ocv over time
 initialsoc=1;
 x(:,1)=[0;initialsoc];
 
-
+tic
 % Simulation loop
 for k = 1:length(t) - 1
     SOC = x(2, k);  % Extract SOC
@@ -48,9 +49,9 @@ for k = 1:length(t) - 1
     A=[-1/tawd,0;
     0,0];
     
-B=-[1/tawd;eta/Q];  
-C=[RD,0];
-D=-(RO);
+    B=-[1/tawd;eta/Q];  
+    C=[RD,0];
+    D=-(RO);
 
 
     % Discretize the state-space system
@@ -67,40 +68,41 @@ D=-(RO);
     OCV_ECM(k)=ocv(coeffs,x(2,k)); % store ocv over time samples
 
 end
+toc
 % the last output is computed outside of the loop
 
 % computing the parameters at last step for computing the last output:
 
 SOC = x(2, end);  % Extract SOC
 
-    % Update parameters using the fit objects
-    RO = feval(fitresult_1, SOC);
-    RD = feval(fitresult_2, SOC);
-    CD = feval(fitresult_3, SOC);
+% Update parameters using the fit objects
+RO = feval(fitresult_1, SOC);
+RD = feval(fitresult_2, SOC);
+CD = feval(fitresult_3, SOC);
 
 
-  
 
 
-    % Recompute time constants
-    tawd = RD * CD;
-   
 
-    A=[-1/tawd,0;
-    0,0];
+% Recompute time constants
+tawd = RD * CD;
+
+
+A=[-1/tawd,0;
+0,0];
     
 B=-[1/tawd;eta/Q];  
 C=[RD,0];
 D=-(RO);
 
 
-    % Discretize the state-space system
-    sys_cont = ss(A, B, C, D);
-    sys_disc = c2d(sys_cont, T);
-    A_d = sys_disc.A;
-    B_d = sys_disc.B;
-    C_d = sys_disc.C;
-    D_d = sys_disc.D;
+% Discretize the state-space system
+sys_cont = ss(A, B, C, D);
+sys_disc = c2d(sys_cont, T);
+A_d = sys_disc.A;
+B_d = sys_disc.B;
+C_d = sys_disc.C;
+D_d = sys_disc.D;
 
  
 y(end)=ocv(coeffs,x(2,end))+C_d*x(:,end)+D_d*I(end);
@@ -115,7 +117,7 @@ soc_points_voltages = []; % Voltages corresponding to target SOC values
 valid_SOC = [];          % Valid SOC values found
 
 
-
+tic
 tolerance=10^-4;
 for i = 1:length(SOC_train)
     idx = find(abs(x(2, :) - SOC_train(i)) < tolerance, 1, 'first'); % Find the closest match
@@ -126,7 +128,7 @@ for i = 1:length(SOC_train)
         valid_SOC = [valid_SOC, SOC_train(i)]; % Store valid SOC values
     end
 end
-
+toc
 index_rmse=soc_points_indices(2):soc_points_indices(end);
 RMSE=rms(y(index_rmse)-V(index_rmse))
 

@@ -2,20 +2,30 @@
 
 This repository aims to verify the claim from (Plett 2011) that UKF are incensitive to the total capacity of the battery when estimating the State Of Charge (SOC).
 
-
+Check out `src/test_state_estimation_with_ukf.m` for an explanation on how to use the code and mutiple examples
 
 
 ## results
 Sans correction (modèle interne batterie de capacité 1) et batterie avec capacité de 0.3 la capacité initiale.
+
 ![](image.png)
+
 Avec correction toute les secondes 
+
 ![](image-1.png)
 
+Avec un modèle du premier order pour l'UKF sur des donnés de SPMe avec une batterie veillie de capacitée réduite de moitié et une constante de temps doublée (utilise un drive cycle ) sans bruit ajouté : 
 
-Avec un modèle du premier order pour l'UKF sur des donnés de SPMe avec une batterie veillie de capacitée réduite de moitié et une constante de temps doublée (utilise un drive cycle ) sans bruit ajouté :  (`src/test_state_estimation_with_ukf.m`) 
-![alt text](image-3.png)
+![](image-3.png)
+
 Le courant d'entrée : 
-![alt text](image-4.png)
+
+![](image-4.png)
+
+With experimental data it also works well : (SOC from 90 to 80)
+
+![](image-2.png)
+
 
 Conclusion : Pour peu que les paramètres de l'UKF sont correctement ajusté (process noise, measurement noise et initial state variance) le SOC de la batterie est bien estimé (ordre de grandeur de l'erreur : 3% en général avec du bruit) même si elle a veilli et que sa capacité et dynamique est différente du modèle utilisé.
 

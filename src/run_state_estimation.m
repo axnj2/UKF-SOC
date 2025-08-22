@@ -10,8 +10,10 @@ function [estimated_SOC] = run_state_estimation(ukf_observator, measured_input_c
     end
 
     estimated_SOC = NaN(size(measured_input_current));
+    f = waitbar(0, "running the state estimation");
     % Loop through each time step
     for k = 1:length(measured_input_current)
+        waitbar(k/length(measured_input_current), f, sprintf("at time step %d/%d", k, length(measured_input_current)))
         if mod(k, correction_interval) == 0
             % Correct the UKF with the new measurements
             ukf_observator.correct(measured_output_voltage(k), measured_input_current(k));
